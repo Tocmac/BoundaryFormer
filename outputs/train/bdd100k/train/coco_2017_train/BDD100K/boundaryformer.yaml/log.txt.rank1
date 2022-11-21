@@ -1,5 +1,5 @@
-[11/17 18:07:09] detectron2 INFO: Rank of current process: 1. World size: 2
-[11/17 18:07:11] detectron2 INFO: Environment info:
+[11/21 17:05:29] detectron2 INFO: Rank of current process: 1. World size: 2
+[11/21 17:05:30] detectron2 INFO: Environment info:
 ----------------------  -----------------------------------------------------------------------------------------------------------------
 sys.platform            linux
 Python                  3.8.15 (default, Nov  4 2022, 20:59:55) [GCC 11.2.0]
@@ -36,47 +36,59 @@ PyTorch built with:
   - Magma 2.5.2
   - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=10.1, CUDNN_VERSION=7.6.3, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.8.1, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
 
-[11/17 18:07:11] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
-[11/17 18:07:11] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml:
-_BASE_: "./Base-BoundaryFormer-RCNN-FPN.yaml"
+[11/21 17:05:30] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
+[11/21 17:05:30] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml:
+_BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   MASK_ON: True
+  ROI_HEADS:
+    NUM_CLASSES: 8
   ROI_MASK_HEAD:
     NAME: "BoundaryFormerPolygonHead"
     POOLER_TYPE: ""
   BOUNDARY_HEAD:
     IN_FEATURES: ["p2", "p3", "p4", "p5"]
     PRED_WITHIN_BOX: True
-    POLY_NUM_PTS: 64
+    POLY_NUM_PTS: 128
     CLS_AGNOSTIC_MASK: True
+    UPSAMPLING_BASE_NUM_PTS: 16
   DIFFRAS:
     RESOLUTIONS: (64, 64, 64, 64, 64, 64, 64, 64)
     USE_RASTERIZED_GT: False
     INV_SMOOTHNESS_SCHED: (0.1,)
   RESNETS:
     DEPTH: 50
-  ROI_HEADS:
-    PROPOSAL_ONLY_GT: False
-SOLVER:
-  OPTIMIZER: "ADAM"
-  BASE_LR: 1e-4
-  WEIGHT_DECAY: 0.05
-  WEIGHT_DECAY_NORM: 0.0
-  STEPS: (60000, 80000)
-  MAX_ITER: 90000
-  IMS_PER_BATCH: 16
-  CLIP_GRADIENTS:
-    ENABLED: False
+# This is similar to the setting used in Mask R-CNN paper, Appendix A
+# But there are some differences, e.g., we did not initialize the output
+# layer using the corresponding classes from COCO
+INPUT:
+  MIN_SIZE_TRAIN: (800, 832, 864, 896, 928, 960, 992, 1024)
+  MIN_SIZE_TRAIN_SAMPLING: "choice"
+  MIN_SIZE_TEST: 1024
+  MAX_SIZE_TRAIN: 2048
+  MAX_SIZE_TEST: 2048
+# DATASETS:
+#   TRAIN: ("cityscapes_fine_instance_seg_train",)
+#   TEST: ("cityscapes_fine_instance_seg_val",)
 DATASETS:
   TRAIN: ("coco_2017_train",)
   TEST: ("coco_2017_val",)
-VIS_PERIOD: 0
+SOLVER:
+  OPTIMIZER: "ADAM"
+  BASE_LR: 1e-4
+  WEIGHT_DECAY: 0.20
+  WEIGHT_DECAY_BIAS: 0.0
+  WEIGHT_DECAY_NORM: 0.0
+  STEPS: (18000,)
+  MAX_ITER: 24000
+  IMS_PER_BATCH: 8
+  CHECKPOINT_PERIOD: 8000
 TEST:
-  EVAL_PERIOD: 5000
+  EVAL_PERIOD: 0
 
-[11/17 18:07:11] detectron2.utils.env INFO: Using a generated random seed 11320399
-[11/17 18:07:12] detectron2.engine.defaults INFO: Model:
+[11/21 17:05:31] detectron2.utils.env INFO: Using a generated random seed 31105356
+[11/21 17:05:31] detectron2.engine.defaults INFO: Model:
 GeneralizedRCNN(
   (backbone): FPN(
     (fpn_lateral2): Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1))
@@ -375,8 +387,8 @@ GeneralizedRCNN(
       (fc_relu2): ReLU()
     )
     (box_predictor): FastRCNNOutputLayers(
-      (cls_score): Linear(in_features=1024, out_features=81, bias=True)
-      (bbox_pred): Linear(in_features=1024, out_features=320, bias=True)
+      (cls_score): Linear(in_features=1024, out_features=9, bias=True)
+      (bbox_pred): Linear(in_features=1024, out_features=32, bias=True)
     )
     (mask_head): BoundaryFormerPolygonHead(
       (vertex_loss_fn_mask): MaskRasterizationLoss(
@@ -540,26 +552,9 @@ GeneralizedRCNN(
     )
   )
 )
-[11/17 18:07:12] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
-[11/17 18:07:12] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.cls_score.weight' to the model due to incompatible shapes: (9, 1024) in the checkpoint but (81, 1024) in the model! You might want to double check if this is expected.
-[11/17 18:07:12] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.cls_score.bias' to the model due to incompatible shapes: (9,) in the checkpoint but (81,) in the model! You might want to double check if this is expected.
-[11/17 18:07:12] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.bbox_pred.weight' to the model due to incompatible shapes: (32, 1024) in the checkpoint but (320, 1024) in the model! You might want to double check if this is expected.
-[11/17 18:07:12] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.bbox_pred.bias' to the model due to incompatible shapes: (32,) in the checkpoint but (320,) in the model! You might want to double check if this is expected.
-[11/17 18:07:12] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/17 18:07:12] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.0.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/17 18:07:12] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.1.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/17 18:07:12] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.2.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/17 18:07:12] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.3.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/17 18:07:12] fvcore.common.checkpoint WARNING: Some model parameters or buffers are not found in the checkpoint:
-[34mroi_heads.box_predictor.bbox_pred.{bias, weight}[0m
-[34mroi_heads.box_predictor.cls_score.{bias, weight}[0m
-[34mroi_heads.mask_head.decoder.layers.0.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.1.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.2.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.3.point_embedding[0m
-[34mroi_heads.mask_head.point_embedding[0m
-[11/17 18:24:48] detectron2 INFO: Rank of current process: 1. World size: 2
-[11/17 18:24:49] detectron2 INFO: Environment info:
+[11/21 17:05:31] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
+[11/21 17:12:11] detectron2 INFO: Rank of current process: 1. World size: 2
+[11/21 17:12:13] detectron2 INFO: Environment info:
 ----------------------  -----------------------------------------------------------------------------------------------------------------
 sys.platform            linux
 Python                  3.8.15 (default, Nov  4 2022, 20:59:55) [GCC 11.2.0]
@@ -596,47 +591,59 @@ PyTorch built with:
   - Magma 2.5.2
   - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=10.1, CUDNN_VERSION=7.6.3, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.8.1, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
 
-[11/17 18:24:49] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
-[11/17 18:24:49] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml:
-_BASE_: "./Base-BoundaryFormer-RCNN-FPN.yaml"
+[11/21 17:12:13] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
+[11/21 17:12:13] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml:
+_BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   MASK_ON: True
+  ROI_HEADS:
+    NUM_CLASSES: 8
   ROI_MASK_HEAD:
     NAME: "BoundaryFormerPolygonHead"
     POOLER_TYPE: ""
   BOUNDARY_HEAD:
     IN_FEATURES: ["p2", "p3", "p4", "p5"]
     PRED_WITHIN_BOX: True
-    POLY_NUM_PTS: 64
+    POLY_NUM_PTS: 128
     CLS_AGNOSTIC_MASK: True
+    UPSAMPLING_BASE_NUM_PTS: 16
   DIFFRAS:
     RESOLUTIONS: (64, 64, 64, 64, 64, 64, 64, 64)
     USE_RASTERIZED_GT: False
     INV_SMOOTHNESS_SCHED: (0.1,)
   RESNETS:
     DEPTH: 50
-  ROI_HEADS:
-    PROPOSAL_ONLY_GT: False
-SOLVER:
-  OPTIMIZER: "ADAM"
-  BASE_LR: 1e-4
-  WEIGHT_DECAY: 0.05
-  WEIGHT_DECAY_NORM: 0.0
-  STEPS: (60000, 80000)
-  MAX_ITER: 90000
-  IMS_PER_BATCH: 16
-  CLIP_GRADIENTS:
-    ENABLED: False
+# This is similar to the setting used in Mask R-CNN paper, Appendix A
+# But there are some differences, e.g., we did not initialize the output
+# layer using the corresponding classes from COCO
+INPUT:
+  MIN_SIZE_TRAIN: (800, 832, 864, 896, 928, 960, 992, 1024)
+  MIN_SIZE_TRAIN_SAMPLING: "choice"
+  MIN_SIZE_TEST: 1024
+  MAX_SIZE_TRAIN: 2048
+  MAX_SIZE_TEST: 2048
+# DATASETS:
+#   TRAIN: ("cityscapes_fine_instance_seg_train",)
+#   TEST: ("cityscapes_fine_instance_seg_val",)
 DATASETS:
   TRAIN: ("coco_2017_train",)
   TEST: ("coco_2017_val",)
-VIS_PERIOD: 0
+SOLVER:
+  OPTIMIZER: "ADAM"
+  BASE_LR: 1e-4
+  WEIGHT_DECAY: 0.20
+  WEIGHT_DECAY_BIAS: 0.0
+  WEIGHT_DECAY_NORM: 0.0
+  STEPS: (18000,)
+  MAX_ITER: 24000
+  IMS_PER_BATCH: 8
+  CHECKPOINT_PERIOD: 8000
 TEST:
-  EVAL_PERIOD: 5000
+  EVAL_PERIOD: 0
 
-[11/17 18:24:50] detectron2.utils.env INFO: Using a generated random seed 50069348
-[11/17 18:24:50] detectron2.engine.defaults INFO: Model:
+[11/21 17:12:13] detectron2.utils.env INFO: Using a generated random seed 13380851
+[11/21 17:12:14] detectron2.engine.defaults INFO: Model:
 GeneralizedRCNN(
   (backbone): FPN(
     (fpn_lateral2): Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1))
@@ -935,8 +942,8 @@ GeneralizedRCNN(
       (fc_relu2): ReLU()
     )
     (box_predictor): FastRCNNOutputLayers(
-      (cls_score): Linear(in_features=1024, out_features=81, bias=True)
-      (bbox_pred): Linear(in_features=1024, out_features=320, bias=True)
+      (cls_score): Linear(in_features=1024, out_features=9, bias=True)
+      (bbox_pred): Linear(in_features=1024, out_features=32, bias=True)
     )
     (mask_head): BoundaryFormerPolygonHead(
       (vertex_loss_fn_mask): MaskRasterizationLoss(
@@ -1100,26 +1107,9 @@ GeneralizedRCNN(
     )
   )
 )
-[11/17 18:24:50] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
-[11/17 18:24:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.cls_score.weight' to the model due to incompatible shapes: (9, 1024) in the checkpoint but (81, 1024) in the model! You might want to double check if this is expected.
-[11/17 18:24:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.cls_score.bias' to the model due to incompatible shapes: (9,) in the checkpoint but (81,) in the model! You might want to double check if this is expected.
-[11/17 18:24:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.bbox_pred.weight' to the model due to incompatible shapes: (32, 1024) in the checkpoint but (320, 1024) in the model! You might want to double check if this is expected.
-[11/17 18:24:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.bbox_pred.bias' to the model due to incompatible shapes: (32,) in the checkpoint but (320,) in the model! You might want to double check if this is expected.
-[11/17 18:24:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/17 18:24:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.0.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/17 18:24:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.1.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/17 18:24:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.2.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/17 18:24:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.3.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/17 18:24:51] fvcore.common.checkpoint WARNING: Some model parameters or buffers are not found in the checkpoint:
-[34mroi_heads.box_predictor.bbox_pred.{bias, weight}[0m
-[34mroi_heads.box_predictor.cls_score.{bias, weight}[0m
-[34mroi_heads.mask_head.decoder.layers.0.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.1.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.2.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.3.point_embedding[0m
-[34mroi_heads.mask_head.point_embedding[0m
-[11/18 17:27:36] detectron2 INFO: Rank of current process: 1. World size: 2
-[11/18 17:27:38] detectron2 INFO: Environment info:
+[11/21 17:12:14] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
+[11/21 17:15:25] detectron2 INFO: Rank of current process: 1. World size: 2
+[11/21 17:15:27] detectron2 INFO: Environment info:
 ----------------------  -----------------------------------------------------------------------------------------------------------------
 sys.platform            linux
 Python                  3.8.15 (default, Nov  4 2022, 20:59:55) [GCC 11.2.0]
@@ -1156,47 +1146,59 @@ PyTorch built with:
   - Magma 2.5.2
   - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=10.1, CUDNN_VERSION=7.6.3, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.8.1, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
 
-[11/18 17:27:38] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
-[11/18 17:27:38] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml:
-_BASE_: "./Base-BoundaryFormer-RCNN-FPN.yaml"
+[11/21 17:15:27] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
+[11/21 17:15:27] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml:
+_BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   MASK_ON: True
+  ROI_HEADS:
+    NUM_CLASSES: 8
   ROI_MASK_HEAD:
     NAME: "BoundaryFormerPolygonHead"
     POOLER_TYPE: ""
   BOUNDARY_HEAD:
     IN_FEATURES: ["p2", "p3", "p4", "p5"]
     PRED_WITHIN_BOX: True
-    POLY_NUM_PTS: 64
+    POLY_NUM_PTS: 128
     CLS_AGNOSTIC_MASK: True
+    UPSAMPLING_BASE_NUM_PTS: 16
   DIFFRAS:
     RESOLUTIONS: (64, 64, 64, 64, 64, 64, 64, 64)
     USE_RASTERIZED_GT: False
     INV_SMOOTHNESS_SCHED: (0.1,)
   RESNETS:
     DEPTH: 50
-  ROI_HEADS:
-    PROPOSAL_ONLY_GT: False
-SOLVER:
-  OPTIMIZER: "ADAM"
-  BASE_LR: 1e-4
-  WEIGHT_DECAY: 0.05
-  WEIGHT_DECAY_NORM: 0.0
-  STEPS: (60000, 80000)
-  MAX_ITER: 90000
-  IMS_PER_BATCH: 16
-  CLIP_GRADIENTS:
-    ENABLED: False
+# This is similar to the setting used in Mask R-CNN paper, Appendix A
+# But there are some differences, e.g., we did not initialize the output
+# layer using the corresponding classes from COCO
+INPUT:
+  MIN_SIZE_TRAIN: (800, 832, 864, 896, 928, 960, 992, 1024)
+  MIN_SIZE_TRAIN_SAMPLING: "choice"
+  MIN_SIZE_TEST: 1024
+  MAX_SIZE_TRAIN: 2048
+  MAX_SIZE_TEST: 2048
+# DATASETS:
+#   TRAIN: ("cityscapes_fine_instance_seg_train",)
+#   TEST: ("cityscapes_fine_instance_seg_val",)
 DATASETS:
   TRAIN: ("coco_2017_train",)
   TEST: ("coco_2017_val",)
-VIS_PERIOD: 0
+SOLVER:
+  OPTIMIZER: "ADAM"
+  BASE_LR: 1e-4
+  WEIGHT_DECAY: 0.20
+  WEIGHT_DECAY_BIAS: 0.0
+  WEIGHT_DECAY_NORM: 0.0
+  STEPS: (18000,)
+  MAX_ITER: 24000
+  IMS_PER_BATCH: 8
+  CHECKPOINT_PERIOD: 8000
 TEST:
-  EVAL_PERIOD: 5000
+  EVAL_PERIOD: 0
 
-[11/18 17:27:38] detectron2.utils.env INFO: Using a generated random seed 38467458
-[11/18 17:27:39] detectron2.engine.defaults INFO: Model:
+[11/21 17:15:27] detectron2.utils.env INFO: Using a generated random seed 27158806
+[11/21 17:15:27] detectron2.engine.defaults INFO: Model:
 GeneralizedRCNN(
   (backbone): FPN(
     (fpn_lateral2): Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1))
@@ -1495,8 +1497,8 @@ GeneralizedRCNN(
       (fc_relu2): ReLU()
     )
     (box_predictor): FastRCNNOutputLayers(
-      (cls_score): Linear(in_features=1024, out_features=81, bias=True)
-      (bbox_pred): Linear(in_features=1024, out_features=320, bias=True)
+      (cls_score): Linear(in_features=1024, out_features=9, bias=True)
+      (bbox_pred): Linear(in_features=1024, out_features=32, bias=True)
     )
     (mask_head): BoundaryFormerPolygonHead(
       (vertex_loss_fn_mask): MaskRasterizationLoss(
@@ -1660,26 +1662,9 @@ GeneralizedRCNN(
     )
   )
 )
-[11/18 17:27:39] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
-[11/18 17:27:39] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.cls_score.weight' to the model due to incompatible shapes: (9, 1024) in the checkpoint but (81, 1024) in the model! You might want to double check if this is expected.
-[11/18 17:27:39] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.cls_score.bias' to the model due to incompatible shapes: (9,) in the checkpoint but (81,) in the model! You might want to double check if this is expected.
-[11/18 17:27:39] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.bbox_pred.weight' to the model due to incompatible shapes: (32, 1024) in the checkpoint but (320, 1024) in the model! You might want to double check if this is expected.
-[11/18 17:27:39] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.bbox_pred.bias' to the model due to incompatible shapes: (32,) in the checkpoint but (320,) in the model! You might want to double check if this is expected.
-[11/18 17:27:39] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/18 17:27:39] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.0.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/18 17:27:39] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.1.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/18 17:27:39] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.2.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/18 17:27:39] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.3.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/18 17:27:39] fvcore.common.checkpoint WARNING: Some model parameters or buffers are not found in the checkpoint:
-[34mroi_heads.box_predictor.bbox_pred.{bias, weight}[0m
-[34mroi_heads.box_predictor.cls_score.{bias, weight}[0m
-[34mroi_heads.mask_head.decoder.layers.0.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.1.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.2.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.3.point_embedding[0m
-[34mroi_heads.mask_head.point_embedding[0m
-[11/19 16:18:43] detectron2 INFO: Rank of current process: 1. World size: 2
-[11/19 16:18:45] detectron2 INFO: Environment info:
+[11/21 17:15:27] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
+[11/21 17:17:16] detectron2 INFO: Rank of current process: 1. World size: 2
+[11/21 17:17:18] detectron2 INFO: Environment info:
 ----------------------  -----------------------------------------------------------------------------------------------------------------
 sys.platform            linux
 Python                  3.8.15 (default, Nov  4 2022, 20:59:55) [GCC 11.2.0]
@@ -1716,47 +1701,59 @@ PyTorch built with:
   - Magma 2.5.2
   - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=10.1, CUDNN_VERSION=7.6.3, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.8.1, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
 
-[11/19 16:18:45] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
-[11/19 16:18:45] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml:
-_BASE_: "./Base-BoundaryFormer-RCNN-FPN.yaml"
+[11/21 17:17:18] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
+[11/21 17:17:18] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml:
+_BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   MASK_ON: True
+  ROI_HEADS:
+    NUM_CLASSES: 8
   ROI_MASK_HEAD:
     NAME: "BoundaryFormerPolygonHead"
     POOLER_TYPE: ""
   BOUNDARY_HEAD:
     IN_FEATURES: ["p2", "p3", "p4", "p5"]
     PRED_WITHIN_BOX: True
-    POLY_NUM_PTS: 64
+    POLY_NUM_PTS: 128
     CLS_AGNOSTIC_MASK: True
+    UPSAMPLING_BASE_NUM_PTS: 16
   DIFFRAS:
     RESOLUTIONS: (64, 64, 64, 64, 64, 64, 64, 64)
     USE_RASTERIZED_GT: False
     INV_SMOOTHNESS_SCHED: (0.1,)
   RESNETS:
     DEPTH: 50
-  ROI_HEADS:
-    PROPOSAL_ONLY_GT: False
-SOLVER:
-  OPTIMIZER: "ADAM"
-  BASE_LR: 1e-4
-  WEIGHT_DECAY: 0.05
-  WEIGHT_DECAY_NORM: 0.0
-  STEPS: (60000, 80000)
-  MAX_ITER: 90000
-  IMS_PER_BATCH: 16
-  CLIP_GRADIENTS:
-    ENABLED: False
+# This is similar to the setting used in Mask R-CNN paper, Appendix A
+# But there are some differences, e.g., we did not initialize the output
+# layer using the corresponding classes from COCO
+INPUT:
+  MIN_SIZE_TRAIN: (800, 832, 864, 896, 928, 960, 992, 1024)
+  MIN_SIZE_TRAIN_SAMPLING: "choice"
+  MIN_SIZE_TEST: 1024
+  MAX_SIZE_TRAIN: 2048
+  MAX_SIZE_TEST: 2048
+# DATASETS:
+#   TRAIN: ("cityscapes_fine_instance_seg_train",)
+#   TEST: ("cityscapes_fine_instance_seg_val",)
 DATASETS:
   TRAIN: ("coco_2017_train",)
   TEST: ("coco_2017_val",)
-VIS_PERIOD: 0
+SOLVER:
+  OPTIMIZER: "ADAM"
+  BASE_LR: 1e-4
+  WEIGHT_DECAY: 0.20
+  WEIGHT_DECAY_BIAS: 0.0
+  WEIGHT_DECAY_NORM: 0.0
+  STEPS: (18000,)
+  MAX_ITER: 24000
+  IMS_PER_BATCH: 8
+  CHECKPOINT_PERIOD: 8000
 TEST:
-  EVAL_PERIOD: 5000
+  EVAL_PERIOD: 0
 
-[11/19 16:18:45] detectron2.utils.env INFO: Using a generated random seed 45712310
-[11/19 16:18:46] detectron2.engine.defaults INFO: Model:
+[11/21 17:17:18] detectron2.utils.env INFO: Using a generated random seed 18505728
+[11/21 17:17:19] detectron2.engine.defaults INFO: Model:
 GeneralizedRCNN(
   (backbone): FPN(
     (fpn_lateral2): Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1))
@@ -2055,8 +2052,8 @@ GeneralizedRCNN(
       (fc_relu2): ReLU()
     )
     (box_predictor): FastRCNNOutputLayers(
-      (cls_score): Linear(in_features=1024, out_features=81, bias=True)
-      (bbox_pred): Linear(in_features=1024, out_features=320, bias=True)
+      (cls_score): Linear(in_features=1024, out_features=9, bias=True)
+      (bbox_pred): Linear(in_features=1024, out_features=32, bias=True)
     )
     (mask_head): BoundaryFormerPolygonHead(
       (vertex_loss_fn_mask): MaskRasterizationLoss(
@@ -2220,26 +2217,9 @@ GeneralizedRCNN(
     )
   )
 )
-[11/19 16:18:46] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
-[11/19 16:18:46] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.cls_score.weight' to the model due to incompatible shapes: (9, 1024) in the checkpoint but (81, 1024) in the model! You might want to double check if this is expected.
-[11/19 16:18:46] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.cls_score.bias' to the model due to incompatible shapes: (9,) in the checkpoint but (81,) in the model! You might want to double check if this is expected.
-[11/19 16:18:46] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.bbox_pred.weight' to the model due to incompatible shapes: (32, 1024) in the checkpoint but (320, 1024) in the model! You might want to double check if this is expected.
-[11/19 16:18:46] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.bbox_pred.bias' to the model due to incompatible shapes: (32,) in the checkpoint but (320,) in the model! You might want to double check if this is expected.
-[11/19 16:18:46] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/19 16:18:46] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.0.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/19 16:18:46] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.1.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/19 16:18:46] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.2.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/19 16:18:46] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.3.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/19 16:18:46] fvcore.common.checkpoint WARNING: Some model parameters or buffers are not found in the checkpoint:
-[34mroi_heads.box_predictor.bbox_pred.{bias, weight}[0m
-[34mroi_heads.box_predictor.cls_score.{bias, weight}[0m
-[34mroi_heads.mask_head.decoder.layers.0.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.1.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.2.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.3.point_embedding[0m
-[34mroi_heads.mask_head.point_embedding[0m
-[11/21 16:31:42] detectron2 INFO: Rank of current process: 1. World size: 2
-[11/21 16:31:44] detectron2 INFO: Environment info:
+[11/21 17:17:19] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
+[11/21 17:27:05] detectron2 INFO: Rank of current process: 1. World size: 2
+[11/21 17:27:07] detectron2 INFO: Environment info:
 ----------------------  -----------------------------------------------------------------------------------------------------------------
 sys.platform            linux
 Python                  3.8.15 (default, Nov  4 2022, 20:59:55) [GCC 11.2.0]
@@ -2276,47 +2256,59 @@ PyTorch built with:
   - Magma 2.5.2
   - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=10.1, CUDNN_VERSION=7.6.3, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.8.1, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
 
-[11/21 16:31:44] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
-[11/21 16:31:44] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml:
-_BASE_: "./Base-BoundaryFormer-RCNN-FPN.yaml"
+[11/21 17:27:07] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
+[11/21 17:27:07] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml:
+_BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   MASK_ON: True
+  ROI_HEADS:
+    NUM_CLASSES: 8
   ROI_MASK_HEAD:
     NAME: "BoundaryFormerPolygonHead"
     POOLER_TYPE: ""
   BOUNDARY_HEAD:
     IN_FEATURES: ["p2", "p3", "p4", "p5"]
     PRED_WITHIN_BOX: True
-    POLY_NUM_PTS: 64
+    POLY_NUM_PTS: 128
     CLS_AGNOSTIC_MASK: True
+    UPSAMPLING_BASE_NUM_PTS: 16
   DIFFRAS:
     RESOLUTIONS: (64, 64, 64, 64, 64, 64, 64, 64)
     USE_RASTERIZED_GT: False
     INV_SMOOTHNESS_SCHED: (0.1,)
   RESNETS:
     DEPTH: 50
-  ROI_HEADS:
-    PROPOSAL_ONLY_GT: False
-SOLVER:
-  OPTIMIZER: "ADAM"
-  BASE_LR: 1e-4
-  WEIGHT_DECAY: 0.05
-  WEIGHT_DECAY_NORM: 0.0
-  STEPS: (60000, 80000)
-  MAX_ITER: 90000
-  IMS_PER_BATCH: 16
-  CLIP_GRADIENTS:
-    ENABLED: False
+# This is similar to the setting used in Mask R-CNN paper, Appendix A
+# But there are some differences, e.g., we did not initialize the output
+# layer using the corresponding classes from COCO
+INPUT:
+  MIN_SIZE_TRAIN: (800, 832, 864, 896, 928, 960, 992, 1024)
+  MIN_SIZE_TRAIN_SAMPLING: "choice"
+  MIN_SIZE_TEST: 1024
+  MAX_SIZE_TRAIN: 2048
+  MAX_SIZE_TEST: 2048
+# DATASETS:
+#   TRAIN: ("cityscapes_fine_instance_seg_train",)
+#   TEST: ("cityscapes_fine_instance_seg_val",)
 DATASETS:
   TRAIN: ("coco_2017_train",)
   TEST: ("coco_2017_val",)
-VIS_PERIOD: 0
+SOLVER:
+  OPTIMIZER: "ADAM"
+  BASE_LR: 1e-4
+  WEIGHT_DECAY: 0.20
+  WEIGHT_DECAY_BIAS: 0.0
+  WEIGHT_DECAY_NORM: 0.0
+  STEPS: (18000,)
+  MAX_ITER: 24000
+  IMS_PER_BATCH: 8
+  CHECKPOINT_PERIOD: 8000
 TEST:
-  EVAL_PERIOD: 5000
+  EVAL_PERIOD: 0
 
-[11/21 16:31:44] detectron2.utils.env INFO: Using a generated random seed 44344036
-[11/21 16:31:45] detectron2.engine.defaults INFO: Model:
+[11/21 17:27:07] detectron2.utils.env INFO: Using a generated random seed 7501820
+[11/21 17:27:08] detectron2.engine.defaults INFO: Model:
 GeneralizedRCNN(
   (backbone): FPN(
     (fpn_lateral2): Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1))
@@ -2615,8 +2607,8 @@ GeneralizedRCNN(
       (fc_relu2): ReLU()
     )
     (box_predictor): FastRCNNOutputLayers(
-      (cls_score): Linear(in_features=1024, out_features=81, bias=True)
-      (bbox_pred): Linear(in_features=1024, out_features=320, bias=True)
+      (cls_score): Linear(in_features=1024, out_features=9, bias=True)
+      (bbox_pred): Linear(in_features=1024, out_features=32, bias=True)
     )
     (mask_head): BoundaryFormerPolygonHead(
       (vertex_loss_fn_mask): MaskRasterizationLoss(
@@ -2780,26 +2772,9 @@ GeneralizedRCNN(
     )
   )
 )
-[11/21 16:31:45] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
-[11/21 16:31:45] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.cls_score.weight' to the model due to incompatible shapes: (9, 1024) in the checkpoint but (81, 1024) in the model! You might want to double check if this is expected.
-[11/21 16:31:45] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.cls_score.bias' to the model due to incompatible shapes: (9,) in the checkpoint but (81,) in the model! You might want to double check if this is expected.
-[11/21 16:31:45] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.bbox_pred.weight' to the model due to incompatible shapes: (32, 1024) in the checkpoint but (320, 1024) in the model! You might want to double check if this is expected.
-[11/21 16:31:45] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.bbox_pred.bias' to the model due to incompatible shapes: (32,) in the checkpoint but (320,) in the model! You might want to double check if this is expected.
-[11/21 16:31:45] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/21 16:31:45] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.0.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/21 16:31:45] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.1.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/21 16:31:45] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.2.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/21 16:31:45] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.3.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/21 16:31:45] fvcore.common.checkpoint WARNING: Some model parameters or buffers are not found in the checkpoint:
-[34mroi_heads.box_predictor.bbox_pred.{bias, weight}[0m
-[34mroi_heads.box_predictor.cls_score.{bias, weight}[0m
-[34mroi_heads.mask_head.decoder.layers.0.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.1.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.2.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.3.point_embedding[0m
-[34mroi_heads.mask_head.point_embedding[0m
-[11/21 16:53:48] detectron2 INFO: Rank of current process: 1. World size: 2
-[11/21 16:53:50] detectron2 INFO: Environment info:
+[11/21 17:27:08] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
+[11/21 17:30:27] detectron2 INFO: Rank of current process: 1. World size: 2
+[11/21 17:30:29] detectron2 INFO: Environment info:
 ----------------------  -----------------------------------------------------------------------------------------------------------------
 sys.platform            linux
 Python                  3.8.15 (default, Nov  4 2022, 20:59:55) [GCC 11.2.0]
@@ -2836,47 +2811,59 @@ PyTorch built with:
   - Magma 2.5.2
   - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=10.1, CUDNN_VERSION=7.6.3, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.8.1, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
 
-[11/21 16:53:50] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
-[11/21 16:53:50] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml:
-_BASE_: "./Base-BoundaryFormer-RCNN-FPN.yaml"
+[11/21 17:30:29] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
+[11/21 17:30:29] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml:
+_BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   MASK_ON: True
+  ROI_HEADS:
+    NUM_CLASSES: 8
   ROI_MASK_HEAD:
     NAME: "BoundaryFormerPolygonHead"
     POOLER_TYPE: ""
   BOUNDARY_HEAD:
     IN_FEATURES: ["p2", "p3", "p4", "p5"]
     PRED_WITHIN_BOX: True
-    POLY_NUM_PTS: 64
+    POLY_NUM_PTS: 128
     CLS_AGNOSTIC_MASK: True
+    UPSAMPLING_BASE_NUM_PTS: 16
   DIFFRAS:
     RESOLUTIONS: (64, 64, 64, 64, 64, 64, 64, 64)
     USE_RASTERIZED_GT: False
     INV_SMOOTHNESS_SCHED: (0.1,)
   RESNETS:
     DEPTH: 50
-  ROI_HEADS:
-    PROPOSAL_ONLY_GT: False
-SOLVER:
-  OPTIMIZER: "ADAM"
-  BASE_LR: 1e-4
-  WEIGHT_DECAY: 0.05
-  WEIGHT_DECAY_NORM: 0.0
-  STEPS: (60000, 80000)
-  MAX_ITER: 90000
-  IMS_PER_BATCH: 16
-  CLIP_GRADIENTS:
-    ENABLED: False
+# This is similar to the setting used in Mask R-CNN paper, Appendix A
+# But there are some differences, e.g., we did not initialize the output
+# layer using the corresponding classes from COCO
+INPUT:
+  MIN_SIZE_TRAIN: (800, 832, 864, 896, 928, 960, 992, 1024)
+  MIN_SIZE_TRAIN_SAMPLING: "choice"
+  MIN_SIZE_TEST: 1024
+  MAX_SIZE_TRAIN: 2048
+  MAX_SIZE_TEST: 2048
+# DATASETS:
+#   TRAIN: ("cityscapes_fine_instance_seg_train",)
+#   TEST: ("cityscapes_fine_instance_seg_val",)
 DATASETS:
   TRAIN: ("coco_2017_train",)
   TEST: ("coco_2017_val",)
-VIS_PERIOD: 0
+SOLVER:
+  OPTIMIZER: "ADAM"
+  BASE_LR: 1e-4
+  WEIGHT_DECAY: 0.20
+  WEIGHT_DECAY_BIAS: 0.0
+  WEIGHT_DECAY_NORM: 0.0
+  STEPS: (18000,)
+  MAX_ITER: 24000
+  IMS_PER_BATCH: 8
+  CHECKPOINT_PERIOD: 8000
 TEST:
-  EVAL_PERIOD: 5000
+  EVAL_PERIOD: 0
 
-[11/21 16:53:50] detectron2.utils.env INFO: Using a generated random seed 50261952
-[11/21 16:53:51] detectron2.engine.defaults INFO: Model:
+[11/21 17:30:29] detectron2.utils.env INFO: Using a generated random seed 29726766
+[11/21 17:30:30] detectron2.engine.defaults INFO: Model:
 GeneralizedRCNN(
   (backbone): FPN(
     (fpn_lateral2): Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1))
@@ -3175,8 +3162,8 @@ GeneralizedRCNN(
       (fc_relu2): ReLU()
     )
     (box_predictor): FastRCNNOutputLayers(
-      (cls_score): Linear(in_features=1024, out_features=81, bias=True)
-      (bbox_pred): Linear(in_features=1024, out_features=320, bias=True)
+      (cls_score): Linear(in_features=1024, out_features=9, bias=True)
+      (bbox_pred): Linear(in_features=1024, out_features=32, bias=True)
     )
     (mask_head): BoundaryFormerPolygonHead(
       (vertex_loss_fn_mask): MaskRasterizationLoss(
@@ -3340,21 +3327,1178 @@ GeneralizedRCNN(
     )
   )
 )
-[11/21 16:53:51] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
-[11/21 16:53:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.cls_score.weight' to the model due to incompatible shapes: (9, 1024) in the checkpoint but (81, 1024) in the model! You might want to double check if this is expected.
-[11/21 16:53:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.cls_score.bias' to the model due to incompatible shapes: (9,) in the checkpoint but (81,) in the model! You might want to double check if this is expected.
-[11/21 16:53:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.bbox_pred.weight' to the model due to incompatible shapes: (32, 1024) in the checkpoint but (320, 1024) in the model! You might want to double check if this is expected.
-[11/21 16:53:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.box_predictor.bbox_pred.bias' to the model due to incompatible shapes: (32,) in the checkpoint but (320,) in the model! You might want to double check if this is expected.
-[11/21 16:53:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/21 16:53:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.0.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/21 16:53:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.1.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/21 16:53:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.2.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/21 16:53:51] fvcore.common.checkpoint WARNING: Skip loading parameter 'roi_heads.mask_head.decoder.layers.3.point_embedding' to the model due to incompatible shapes: (128, 512) in the checkpoint but (64, 512) in the model! You might want to double check if this is expected.
-[11/21 16:53:51] fvcore.common.checkpoint WARNING: Some model parameters or buffers are not found in the checkpoint:
-[34mroi_heads.box_predictor.bbox_pred.{bias, weight}[0m
-[34mroi_heads.box_predictor.cls_score.{bias, weight}[0m
-[34mroi_heads.mask_head.decoder.layers.0.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.1.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.2.point_embedding[0m
-[34mroi_heads.mask_head.decoder.layers.3.point_embedding[0m
-[34mroi_heads.mask_head.point_embedding[0m
+[11/21 17:30:30] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
+[11/21 17:31:19] detectron2 INFO: Rank of current process: 1. World size: 2
+[11/21 17:31:20] detectron2 INFO: Environment info:
+----------------------  -----------------------------------------------------------------------------------------------------------------
+sys.platform            linux
+Python                  3.8.15 (default, Nov  4 2022, 20:59:55) [GCC 11.2.0]
+numpy                   1.23.4
+detectron2              0.6 @/root/anaconda3/envs/detectron2/lib/python3.8/site-packages/detectron2-0.6-py3.8-linux-x86_64.egg/detectron2
+Compiler                GCC 7.3
+CUDA compiler           CUDA 10.1
+detectron2 arch flags   7.0
+DETECTRON2_ENV_MODULE   <not set>
+PyTorch                 1.8.1+cu101 @/root/anaconda3/envs/detectron2/lib/python3.8/site-packages/torch
+PyTorch debug build     False
+GPU available           Yes
+GPU 0,1                 GeForce RTX 2080 Ti (arch=7.5)
+Driver version          450.80.02
+CUDA_HOME               /usr/local/cuda
+Pillow                  9.3.0
+torchvision             0.9.1+cu101 @/root/anaconda3/envs/detectron2/lib/python3.8/site-packages/torchvision
+torchvision arch flags  3.5, 5.0, 6.0, 7.0, 7.5
+fvcore                  0.1.5.post20220512
+iopath                  0.1.9
+cv2                     4.6.0
+----------------------  -----------------------------------------------------------------------------------------------------------------
+PyTorch built with:
+  - GCC 7.3
+  - C++ Version: 201402
+  - Intel(R) Math Kernel Library Version 2020.0.0 Product Build 20191122 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v1.7.0 (Git Hash 7aed236906b1f7a05c0917e5257a1af05e9ff683)
+  - OpenMP 201511 (a.k.a. OpenMP 4.5)
+  - NNPACK is enabled
+  - CPU capability usage: AVX2
+  - CUDA Runtime 10.1
+  - NVCC architecture flags: -gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_70,code=sm_70
+  - CuDNN 7.6.3
+  - Magma 2.5.2
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=10.1, CUDNN_VERSION=7.6.3, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.8.1, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
+
+[11/21 17:31:20] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
+[11/21 17:31:20] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml:
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  ROI_HEADS:
+    NUM_CLASSES: 8
+  ROI_MASK_HEAD:
+    NAME: "BoundaryFormerPolygonHead"
+    POOLER_TYPE: ""
+  BOUNDARY_HEAD:
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+    PRED_WITHIN_BOX: True
+    POLY_NUM_PTS: 128
+    CLS_AGNOSTIC_MASK: True
+    UPSAMPLING_BASE_NUM_PTS: 16
+  DIFFRAS:
+    RESOLUTIONS: (64, 64, 64, 64, 64, 64, 64, 64)
+    USE_RASTERIZED_GT: False
+    INV_SMOOTHNESS_SCHED: (0.1,)
+  RESNETS:
+    DEPTH: 50
+# This is similar to the setting used in Mask R-CNN paper, Appendix A
+# But there are some differences, e.g., we did not initialize the output
+# layer using the corresponding classes from COCO
+INPUT:
+  MIN_SIZE_TRAIN: (800, 832, 864, 896, 928, 960, 992, 1024)
+  MIN_SIZE_TRAIN_SAMPLING: "choice"
+  MIN_SIZE_TEST: 1024
+  MAX_SIZE_TRAIN: 2048
+  MAX_SIZE_TEST: 2048
+# DATASETS:
+#   TRAIN: ("cityscapes_fine_instance_seg_train",)
+#   TEST: ("cityscapes_fine_instance_seg_val",)
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  TEST: ("coco_2017_val",)
+SOLVER:
+  OPTIMIZER: "ADAM"
+  BASE_LR: 1e-4
+  WEIGHT_DECAY: 0.20
+  WEIGHT_DECAY_BIAS: 0.0
+  WEIGHT_DECAY_NORM: 0.0
+  STEPS: (18000,)
+  MAX_ITER: 24000
+  IMS_PER_BATCH: 8
+  CHECKPOINT_PERIOD: 8000
+TEST:
+  EVAL_PERIOD: 0
+
+[11/21 17:31:20] detectron2.utils.env INFO: Using a generated random seed 20760082
+[11/21 17:31:21] detectron2.engine.defaults INFO: Model:
+GeneralizedRCNN(
+  (backbone): FPN(
+    (fpn_lateral2): Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1))
+    (fpn_output2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (fpn_lateral3): Conv2d(512, 256, kernel_size=(1, 1), stride=(1, 1))
+    (fpn_output3): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (fpn_lateral4): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1))
+    (fpn_output4): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (fpn_lateral5): Conv2d(2048, 256, kernel_size=(1, 1), stride=(1, 1))
+    (fpn_output5): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (top_block): LastLevelMaxPool()
+    (bottom_up): ResNet(
+      (stem): BasicStem(
+        (conv1): Conv2d(
+          3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False
+          (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+        )
+      )
+      (res2): Sequential(
+        (0): BottleneckBlock(
+          (shortcut): Conv2d(
+            64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv1): Conv2d(
+            64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+        )
+        (1): BottleneckBlock(
+          (conv1): Conv2d(
+            256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+        )
+        (2): BottleneckBlock(
+          (conv1): Conv2d(
+            256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+        )
+      )
+      (res3): Sequential(
+        (0): BottleneckBlock(
+          (shortcut): Conv2d(
+            256, 512, kernel_size=(1, 1), stride=(2, 2), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv1): Conv2d(
+            256, 128, kernel_size=(1, 1), stride=(2, 2), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+        )
+        (1): BottleneckBlock(
+          (conv1): Conv2d(
+            512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+        )
+        (2): BottleneckBlock(
+          (conv1): Conv2d(
+            512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+        )
+        (3): BottleneckBlock(
+          (conv1): Conv2d(
+            512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+        )
+      )
+      (res4): Sequential(
+        (0): BottleneckBlock(
+          (shortcut): Conv2d(
+            512, 1024, kernel_size=(1, 1), stride=(2, 2), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+          (conv1): Conv2d(
+            512, 256, kernel_size=(1, 1), stride=(2, 2), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+        )
+        (1): BottleneckBlock(
+          (conv1): Conv2d(
+            1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+        )
+        (2): BottleneckBlock(
+          (conv1): Conv2d(
+            1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+        )
+        (3): BottleneckBlock(
+          (conv1): Conv2d(
+            1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+        )
+        (4): BottleneckBlock(
+          (conv1): Conv2d(
+            1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+        )
+        (5): BottleneckBlock(
+          (conv1): Conv2d(
+            1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+        )
+      )
+      (res5): Sequential(
+        (0): BottleneckBlock(
+          (shortcut): Conv2d(
+            1024, 2048, kernel_size=(1, 1), stride=(2, 2), bias=False
+            (norm): FrozenBatchNorm2d(num_features=2048, eps=1e-05)
+          )
+          (conv1): Conv2d(
+            1024, 512, kernel_size=(1, 1), stride=(2, 2), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=2048, eps=1e-05)
+          )
+        )
+        (1): BottleneckBlock(
+          (conv1): Conv2d(
+            2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=2048, eps=1e-05)
+          )
+        )
+        (2): BottleneckBlock(
+          (conv1): Conv2d(
+            2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=2048, eps=1e-05)
+          )
+        )
+      )
+    )
+  )
+  (proposal_generator): RPN(
+    (rpn_head): StandardRPNHead(
+      (conv): Conv2d(
+        256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
+        (activation): ReLU()
+      )
+      (objectness_logits): Conv2d(256, 3, kernel_size=(1, 1), stride=(1, 1))
+      (anchor_deltas): Conv2d(256, 12, kernel_size=(1, 1), stride=(1, 1))
+    )
+    (anchor_generator): DefaultAnchorGenerator(
+      (cell_anchors): BufferList()
+    )
+  )
+  (roi_heads): StandardROIHeads(
+    (box_pooler): ROIPooler(
+      (level_poolers): ModuleList(
+        (0): ROIAlign(output_size=(7, 7), spatial_scale=0.25, sampling_ratio=0, aligned=True)
+        (1): ROIAlign(output_size=(7, 7), spatial_scale=0.125, sampling_ratio=0, aligned=True)
+        (2): ROIAlign(output_size=(7, 7), spatial_scale=0.0625, sampling_ratio=0, aligned=True)
+        (3): ROIAlign(output_size=(7, 7), spatial_scale=0.03125, sampling_ratio=0, aligned=True)
+      )
+    )
+    (box_head): FastRCNNConvFCHead(
+      (flatten): Flatten(start_dim=1, end_dim=-1)
+      (fc1): Linear(in_features=12544, out_features=1024, bias=True)
+      (fc_relu1): ReLU()
+      (fc2): Linear(in_features=1024, out_features=1024, bias=True)
+      (fc_relu2): ReLU()
+    )
+    (box_predictor): FastRCNNOutputLayers(
+      (cls_score): Linear(in_features=1024, out_features=9, bias=True)
+      (bbox_pred): Linear(in_features=1024, out_features=32, bias=True)
+    )
+    (mask_head): BoundaryFormerPolygonHead(
+      (vertex_loss_fn_mask): MaskRasterizationLoss(
+        (pred_rasterizer): SoftPolygon()
+        (clipper): ClippingStrategy()
+      )
+      (position_embedding): PositionEmbeddingSine()
+      (level_embed): Embedding(4, 256)
+      (xy_embed): ModuleList(
+        (0): MLP(
+          (layers): ModuleList(
+            (0): Linear(in_features=256, out_features=256, bias=True)
+            (1): Linear(in_features=256, out_features=256, bias=True)
+            (2): Linear(in_features=256, out_features=2, bias=True)
+          )
+        )
+        (1): MLP(
+          (layers): ModuleList(
+            (0): Linear(in_features=256, out_features=256, bias=True)
+            (1): Linear(in_features=256, out_features=256, bias=True)
+            (2): Linear(in_features=256, out_features=2, bias=True)
+          )
+        )
+        (2): MLP(
+          (layers): ModuleList(
+            (0): Linear(in_features=256, out_features=256, bias=True)
+            (1): Linear(in_features=256, out_features=256, bias=True)
+            (2): Linear(in_features=256, out_features=2, bias=True)
+          )
+        )
+        (3): MLP(
+          (layers): ModuleList(
+            (0): Linear(in_features=256, out_features=256, bias=True)
+            (1): Linear(in_features=256, out_features=256, bias=True)
+            (2): Linear(in_features=256, out_features=2, bias=True)
+          )
+        )
+      )
+      (decoder): DeformableTransformerDecoder(
+        (layers): ModuleList(
+          (0): UpsamplingDecoderLayer(
+            (inner): DeformableTransformerControlLayer(
+              (cross_attn): MSDeformAttn(
+                (sampling_offsets): Linear(in_features=256, out_features=256, bias=True)
+                (attention_weights): Linear(in_features=256, out_features=128, bias=True)
+                (value_proj): Linear(in_features=256, out_features=256, bias=True)
+                (output_proj): Linear(in_features=256, out_features=256, bias=True)
+              )
+              (dropout1): Dropout(p=0.0, inplace=False)
+              (norm1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (self_attn): MultiheadAttention(
+                (out_proj): _LinearWithBias(in_features=256, out_features=256, bias=True)
+              )
+              (dropout2): Dropout(p=0.0, inplace=False)
+              (norm2): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (linear1): Linear(in_features=256, out_features=1024, bias=True)
+              (dropout3): Dropout(p=0.0, inplace=False)
+              (linear2): Linear(in_features=1024, out_features=256, bias=True)
+              (dropout4): Dropout(p=0.0, inplace=False)
+              (norm3): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+          (1): UpsamplingDecoderLayer(
+            (inner): DeformableTransformerControlLayer(
+              (cross_attn): MSDeformAttn(
+                (sampling_offsets): Linear(in_features=256, out_features=256, bias=True)
+                (attention_weights): Linear(in_features=256, out_features=128, bias=True)
+                (value_proj): Linear(in_features=256, out_features=256, bias=True)
+                (output_proj): Linear(in_features=256, out_features=256, bias=True)
+              )
+              (dropout1): Dropout(p=0.0, inplace=False)
+              (norm1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (self_attn): MultiheadAttention(
+                (out_proj): _LinearWithBias(in_features=256, out_features=256, bias=True)
+              )
+              (dropout2): Dropout(p=0.0, inplace=False)
+              (norm2): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (linear1): Linear(in_features=256, out_features=1024, bias=True)
+              (dropout3): Dropout(p=0.0, inplace=False)
+              (linear2): Linear(in_features=1024, out_features=256, bias=True)
+              (dropout4): Dropout(p=0.0, inplace=False)
+              (norm3): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+          (2): UpsamplingDecoderLayer(
+            (inner): DeformableTransformerControlLayer(
+              (cross_attn): MSDeformAttn(
+                (sampling_offsets): Linear(in_features=256, out_features=256, bias=True)
+                (attention_weights): Linear(in_features=256, out_features=128, bias=True)
+                (value_proj): Linear(in_features=256, out_features=256, bias=True)
+                (output_proj): Linear(in_features=256, out_features=256, bias=True)
+              )
+              (dropout1): Dropout(p=0.0, inplace=False)
+              (norm1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (self_attn): MultiheadAttention(
+                (out_proj): _LinearWithBias(in_features=256, out_features=256, bias=True)
+              )
+              (dropout2): Dropout(p=0.0, inplace=False)
+              (norm2): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (linear1): Linear(in_features=256, out_features=1024, bias=True)
+              (dropout3): Dropout(p=0.0, inplace=False)
+              (linear2): Linear(in_features=1024, out_features=256, bias=True)
+              (dropout4): Dropout(p=0.0, inplace=False)
+              (norm3): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+          (3): UpsamplingDecoderLayer(
+            (inner): DeformableTransformerControlLayer(
+              (cross_attn): MSDeformAttn(
+                (sampling_offsets): Linear(in_features=256, out_features=256, bias=True)
+                (attention_weights): Linear(in_features=256, out_features=128, bias=True)
+                (value_proj): Linear(in_features=256, out_features=256, bias=True)
+                (output_proj): Linear(in_features=256, out_features=256, bias=True)
+              )
+              (dropout1): Dropout(p=0.0, inplace=False)
+              (norm1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (self_attn): MultiheadAttention(
+                (out_proj): _LinearWithBias(in_features=256, out_features=256, bias=True)
+              )
+              (dropout2): Dropout(p=0.0, inplace=False)
+              (norm2): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (linear1): Linear(in_features=256, out_features=1024, bias=True)
+              (dropout3): Dropout(p=0.0, inplace=False)
+              (linear2): Linear(in_features=1024, out_features=256, bias=True)
+              (dropout4): Dropout(p=0.0, inplace=False)
+              (norm3): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+        )
+        (xy_embed): ModuleList(
+          (0): MLP(
+            (layers): ModuleList(
+              (0): Linear(in_features=256, out_features=256, bias=True)
+              (1): Linear(in_features=256, out_features=256, bias=True)
+              (2): Linear(in_features=256, out_features=2, bias=True)
+            )
+          )
+          (1): MLP(
+            (layers): ModuleList(
+              (0): Linear(in_features=256, out_features=256, bias=True)
+              (1): Linear(in_features=256, out_features=256, bias=True)
+              (2): Linear(in_features=256, out_features=2, bias=True)
+            )
+          )
+          (2): MLP(
+            (layers): ModuleList(
+              (0): Linear(in_features=256, out_features=256, bias=True)
+              (1): Linear(in_features=256, out_features=256, bias=True)
+              (2): Linear(in_features=256, out_features=2, bias=True)
+            )
+          )
+          (3): MLP(
+            (layers): ModuleList(
+              (0): Linear(in_features=256, out_features=256, bias=True)
+              (1): Linear(in_features=256, out_features=256, bias=True)
+              (2): Linear(in_features=256, out_features=2, bias=True)
+            )
+          )
+        )
+      )
+    )
+  )
+)
+[11/21 17:31:21] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
+[11/21 17:31:21] detectron2.data.datasets.coco INFO: Loaded 1000 images in COCO format from datasets/coco/annotations/instances_val2017.json
+[11/21 17:31:21] detectron2.data.build INFO: Distribution of instances among all 8 categories:
+[36m|  category  | #instances   |  category  | #instances   |  category  | #instances   |
+|:----------:|:-------------|:----------:|:-------------|:----------:|:-------------|
+| pedestrian | 1177         |   rider    | 45           |    car     | 10889        |
+|   truck    | 521          |    bus     | 219          |   train    | 7            |
+| motorcycle | 47           |  bicycle   | 100          |            |              |
+|   total    | 13005        |            |              |            |              |[0m
+[11/21 17:31:21] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(1024, 1024), max_size=2048, sample_style='choice')]
+[11/21 17:31:21] detectron2.data.common INFO: Serializing 1000 elements to byte tensors and concatenating them all ...
+[11/21 17:31:21] detectron2.data.common INFO: Serialized dataset takes 3.50 MiB
+[11/21 17:31:21] detectron2.evaluation.evaluator INFO: Start inference on 500 batches
+[11/21 17:31:28] detectron2.evaluation.evaluator INFO: Inference done 11/500. Dataloading: 0.0016 s/iter. Inference: 0.1654 s/iter. Eval: 0.0627 s/iter. Total: 0.2298 s/iter. ETA=0:01:52
+[11/21 17:31:34] detectron2.evaluation.evaluator INFO: Inference done 40/500. Dataloading: 0.0020 s/iter. Inference: 0.1460 s/iter. Eval: 0.0373 s/iter. Total: 0.1853 s/iter. ETA=0:01:25
+[11/21 17:31:39] detectron2.evaluation.evaluator INFO: Inference done 68/500. Dataloading: 0.0021 s/iter. Inference: 0.1445 s/iter. Eval: 0.0376 s/iter. Total: 0.1843 s/iter. ETA=0:01:19
+[11/21 17:31:44] detectron2.evaluation.evaluator INFO: Inference done 94/500. Dataloading: 0.0021 s/iter. Inference: 0.1455 s/iter. Eval: 0.0395 s/iter. Total: 0.1871 s/iter. ETA=0:01:15
+[11/21 17:31:49] detectron2.evaluation.evaluator INFO: Inference done 120/500. Dataloading: 0.0021 s/iter. Inference: 0.1461 s/iter. Eval: 0.0405 s/iter. Total: 0.1888 s/iter. ETA=0:01:11
+[11/21 17:31:54] detectron2.evaluation.evaluator INFO: Inference done 147/500. Dataloading: 0.0021 s/iter. Inference: 0.1458 s/iter. Eval: 0.0405 s/iter. Total: 0.1885 s/iter. ETA=0:01:06
+[11/21 17:31:59] detectron2.evaluation.evaluator INFO: Inference done 175/500. Dataloading: 0.0021 s/iter. Inference: 0.1460 s/iter. Eval: 0.0406 s/iter. Total: 0.1888 s/iter. ETA=0:01:01
+[11/21 17:32:04] detectron2.evaluation.evaluator INFO: Inference done 202/500. Dataloading: 0.0021 s/iter. Inference: 0.1461 s/iter. Eval: 0.0406 s/iter. Total: 0.1889 s/iter. ETA=0:00:56
+[11/21 17:32:09] detectron2.evaluation.evaluator INFO: Inference done 231/500. Dataloading: 0.0021 s/iter. Inference: 0.1454 s/iter. Eval: 0.0398 s/iter. Total: 0.1874 s/iter. ETA=0:00:50
+[11/21 17:32:14] detectron2.evaluation.evaluator INFO: Inference done 257/500. Dataloading: 0.0021 s/iter. Inference: 0.1458 s/iter. Eval: 0.0404 s/iter. Total: 0.1884 s/iter. ETA=0:00:45
+[11/21 17:32:20] detectron2.evaluation.evaluator INFO: Inference done 284/500. Dataloading: 0.0021 s/iter. Inference: 0.1457 s/iter. Eval: 0.0405 s/iter. Total: 0.1884 s/iter. ETA=0:00:40
+[11/21 17:32:25] detectron2.evaluation.evaluator INFO: Inference done 313/500. Dataloading: 0.0021 s/iter. Inference: 0.1450 s/iter. Eval: 0.0399 s/iter. Total: 0.1872 s/iter. ETA=0:00:34
+[11/21 17:32:30] detectron2.evaluation.evaluator INFO: Inference done 340/500. Dataloading: 0.0021 s/iter. Inference: 0.1452 s/iter. Eval: 0.0401 s/iter. Total: 0.1875 s/iter. ETA=0:00:30
+[11/21 17:32:35] detectron2.evaluation.evaluator INFO: Inference done 369/500. Dataloading: 0.0021 s/iter. Inference: 0.1451 s/iter. Eval: 0.0398 s/iter. Total: 0.1871 s/iter. ETA=0:00:24
+[11/21 17:32:40] detectron2.evaluation.evaluator INFO: Inference done 397/500. Dataloading: 0.0021 s/iter. Inference: 0.1449 s/iter. Eval: 0.0397 s/iter. Total: 0.1868 s/iter. ETA=0:00:19
+[11/21 17:32:45] detectron2.evaluation.evaluator INFO: Inference done 423/500. Dataloading: 0.0021 s/iter. Inference: 0.1452 s/iter. Eval: 0.0401 s/iter. Total: 0.1875 s/iter. ETA=0:00:14
+[11/21 17:32:51] detectron2.evaluation.evaluator INFO: Inference done 452/500. Dataloading: 0.0021 s/iter. Inference: 0.1449 s/iter. Eval: 0.0398 s/iter. Total: 0.1869 s/iter. ETA=0:00:08
+[11/21 17:32:56] detectron2.evaluation.evaluator INFO: Inference done 479/500. Dataloading: 0.0021 s/iter. Inference: 0.1449 s/iter. Eval: 0.0399 s/iter. Total: 0.1869 s/iter. ETA=0:00:03
+[11/21 17:33:00] detectron2.evaluation.evaluator INFO: Total inference time: 0:01:32.953932 (0.187786 s / iter per device, on 2 devices)
+[11/21 17:33:00] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:01:11 (0.145020 s / iter per device, on 2 devices)
+[11/21 17:47:51] detectron2 INFO: Rank of current process: 1. World size: 2
+[11/21 17:47:52] detectron2 INFO: Environment info:
+----------------------  -----------------------------------------------------------------------------------------------------------------
+sys.platform            linux
+Python                  3.8.15 (default, Nov  4 2022, 20:59:55) [GCC 11.2.0]
+numpy                   1.23.4
+detectron2              0.6 @/root/anaconda3/envs/detectron2/lib/python3.8/site-packages/detectron2-0.6-py3.8-linux-x86_64.egg/detectron2
+Compiler                GCC 7.3
+CUDA compiler           CUDA 10.1
+detectron2 arch flags   7.0
+DETECTRON2_ENV_MODULE   <not set>
+PyTorch                 1.8.1+cu101 @/root/anaconda3/envs/detectron2/lib/python3.8/site-packages/torch
+PyTorch debug build     False
+GPU available           Yes
+GPU 0,1                 GeForce RTX 2080 Ti (arch=7.5)
+Driver version          450.80.02
+CUDA_HOME               /usr/local/cuda
+Pillow                  9.3.0
+torchvision             0.9.1+cu101 @/root/anaconda3/envs/detectron2/lib/python3.8/site-packages/torchvision
+torchvision arch flags  3.5, 5.0, 6.0, 7.0, 7.5
+fvcore                  0.1.5.post20220512
+iopath                  0.1.9
+cv2                     4.6.0
+----------------------  -----------------------------------------------------------------------------------------------------------------
+PyTorch built with:
+  - GCC 7.3
+  - C++ Version: 201402
+  - Intel(R) Math Kernel Library Version 2020.0.0 Product Build 20191122 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v1.7.0 (Git Hash 7aed236906b1f7a05c0917e5257a1af05e9ff683)
+  - OpenMP 201511 (a.k.a. OpenMP 4.5)
+  - NNPACK is enabled
+  - CPU capability usage: AVX2
+  - CUDA Runtime 10.1
+  - NVCC architecture flags: -gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_70,code=sm_70
+  - CuDNN 7.6.3
+  - Magma 2.5.2
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=10.1, CUDNN_VERSION=7.6.3, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.8.1, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
+
+[11/21 17:47:52] detectron2 INFO: Command line arguments: Namespace(config_file='projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml', dist_url='tcp://127.0.0.1:49152', eval_only=True, machine_rank=0, num_gpus=2, num_machines=1, opts=['MODEL.WEIGHTS', 'model/cityscapes_r50_fpn_1x_coco.pth'], resume=False)
+[11/21 17:47:52] detectron2 INFO: Contents of args.config_file=projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml:
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  ROI_HEADS:
+    NUM_CLASSES: 8
+  ROI_MASK_HEAD:
+    NAME: "BoundaryFormerPolygonHead"
+    POOLER_TYPE: ""
+  BOUNDARY_HEAD:
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+    PRED_WITHIN_BOX: True
+    POLY_NUM_PTS: 128
+    CLS_AGNOSTIC_MASK: True
+    UPSAMPLING_BASE_NUM_PTS: 16
+  DIFFRAS:
+    RESOLUTIONS: (64, 64, 64, 64, 64, 64, 64, 64)
+    USE_RASTERIZED_GT: False
+    INV_SMOOTHNESS_SCHED: (0.1,)
+  RESNETS:
+    DEPTH: 50
+# This is similar to the setting used in Mask R-CNN paper, Appendix A
+# But there are some differences, e.g., we did not initialize the output
+# layer using the corresponding classes from COCO
+INPUT:
+  MIN_SIZE_TRAIN: (800, 832, 864, 896, 928, 960, 992, 1024)
+  MIN_SIZE_TRAIN_SAMPLING: "choice"
+  MIN_SIZE_TEST: 1024
+  MAX_SIZE_TRAIN: 2048
+  MAX_SIZE_TEST: 2048
+# DATASETS:
+#   TRAIN: ("cityscapes_fine_instance_seg_train",)
+#   TEST: ("cityscapes_fine_instance_seg_val",)
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  TEST: ("coco_2017_val",)
+SOLVER:
+  OPTIMIZER: "ADAM"
+  BASE_LR: 1e-4
+  WEIGHT_DECAY: 0.20
+  WEIGHT_DECAY_BIAS: 0.0
+  WEIGHT_DECAY_NORM: 0.0
+  STEPS: (18000,)
+  MAX_ITER: 24000
+  IMS_PER_BATCH: 8
+  CHECKPOINT_PERIOD: 8000
+TEST:
+  EVAL_PERIOD: 0
+
+[11/21 17:47:52] detectron2.utils.env INFO: Using a generated random seed 53008785
+[11/21 17:47:53] detectron2.engine.defaults INFO: Model:
+GeneralizedRCNN(
+  (backbone): FPN(
+    (fpn_lateral2): Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1))
+    (fpn_output2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (fpn_lateral3): Conv2d(512, 256, kernel_size=(1, 1), stride=(1, 1))
+    (fpn_output3): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (fpn_lateral4): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1))
+    (fpn_output4): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (fpn_lateral5): Conv2d(2048, 256, kernel_size=(1, 1), stride=(1, 1))
+    (fpn_output5): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (top_block): LastLevelMaxPool()
+    (bottom_up): ResNet(
+      (stem): BasicStem(
+        (conv1): Conv2d(
+          3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False
+          (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+        )
+      )
+      (res2): Sequential(
+        (0): BottleneckBlock(
+          (shortcut): Conv2d(
+            64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv1): Conv2d(
+            64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+        )
+        (1): BottleneckBlock(
+          (conv1): Conv2d(
+            256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+        )
+        (2): BottleneckBlock(
+          (conv1): Conv2d(
+            256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=64, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+        )
+      )
+      (res3): Sequential(
+        (0): BottleneckBlock(
+          (shortcut): Conv2d(
+            256, 512, kernel_size=(1, 1), stride=(2, 2), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv1): Conv2d(
+            256, 128, kernel_size=(1, 1), stride=(2, 2), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+        )
+        (1): BottleneckBlock(
+          (conv1): Conv2d(
+            512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+        )
+        (2): BottleneckBlock(
+          (conv1): Conv2d(
+            512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+        )
+        (3): BottleneckBlock(
+          (conv1): Conv2d(
+            512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=128, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+        )
+      )
+      (res4): Sequential(
+        (0): BottleneckBlock(
+          (shortcut): Conv2d(
+            512, 1024, kernel_size=(1, 1), stride=(2, 2), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+          (conv1): Conv2d(
+            512, 256, kernel_size=(1, 1), stride=(2, 2), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+        )
+        (1): BottleneckBlock(
+          (conv1): Conv2d(
+            1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+        )
+        (2): BottleneckBlock(
+          (conv1): Conv2d(
+            1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+        )
+        (3): BottleneckBlock(
+          (conv1): Conv2d(
+            1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+        )
+        (4): BottleneckBlock(
+          (conv1): Conv2d(
+            1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+        )
+        (5): BottleneckBlock(
+          (conv1): Conv2d(
+            1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=256, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=1024, eps=1e-05)
+          )
+        )
+      )
+      (res5): Sequential(
+        (0): BottleneckBlock(
+          (shortcut): Conv2d(
+            1024, 2048, kernel_size=(1, 1), stride=(2, 2), bias=False
+            (norm): FrozenBatchNorm2d(num_features=2048, eps=1e-05)
+          )
+          (conv1): Conv2d(
+            1024, 512, kernel_size=(1, 1), stride=(2, 2), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=2048, eps=1e-05)
+          )
+        )
+        (1): BottleneckBlock(
+          (conv1): Conv2d(
+            2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=2048, eps=1e-05)
+          )
+        )
+        (2): BottleneckBlock(
+          (conv1): Conv2d(
+            2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv2): Conv2d(
+            512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=512, eps=1e-05)
+          )
+          (conv3): Conv2d(
+            512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False
+            (norm): FrozenBatchNorm2d(num_features=2048, eps=1e-05)
+          )
+        )
+      )
+    )
+  )
+  (proposal_generator): RPN(
+    (rpn_head): StandardRPNHead(
+      (conv): Conv2d(
+        256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
+        (activation): ReLU()
+      )
+      (objectness_logits): Conv2d(256, 3, kernel_size=(1, 1), stride=(1, 1))
+      (anchor_deltas): Conv2d(256, 12, kernel_size=(1, 1), stride=(1, 1))
+    )
+    (anchor_generator): DefaultAnchorGenerator(
+      (cell_anchors): BufferList()
+    )
+  )
+  (roi_heads): StandardROIHeads(
+    (box_pooler): ROIPooler(
+      (level_poolers): ModuleList(
+        (0): ROIAlign(output_size=(7, 7), spatial_scale=0.25, sampling_ratio=0, aligned=True)
+        (1): ROIAlign(output_size=(7, 7), spatial_scale=0.125, sampling_ratio=0, aligned=True)
+        (2): ROIAlign(output_size=(7, 7), spatial_scale=0.0625, sampling_ratio=0, aligned=True)
+        (3): ROIAlign(output_size=(7, 7), spatial_scale=0.03125, sampling_ratio=0, aligned=True)
+      )
+    )
+    (box_head): FastRCNNConvFCHead(
+      (flatten): Flatten(start_dim=1, end_dim=-1)
+      (fc1): Linear(in_features=12544, out_features=1024, bias=True)
+      (fc_relu1): ReLU()
+      (fc2): Linear(in_features=1024, out_features=1024, bias=True)
+      (fc_relu2): ReLU()
+    )
+    (box_predictor): FastRCNNOutputLayers(
+      (cls_score): Linear(in_features=1024, out_features=9, bias=True)
+      (bbox_pred): Linear(in_features=1024, out_features=32, bias=True)
+    )
+    (mask_head): BoundaryFormerPolygonHead(
+      (vertex_loss_fn_mask): MaskRasterizationLoss(
+        (pred_rasterizer): SoftPolygon()
+        (clipper): ClippingStrategy()
+      )
+      (position_embedding): PositionEmbeddingSine()
+      (level_embed): Embedding(4, 256)
+      (xy_embed): ModuleList(
+        (0): MLP(
+          (layers): ModuleList(
+            (0): Linear(in_features=256, out_features=256, bias=True)
+            (1): Linear(in_features=256, out_features=256, bias=True)
+            (2): Linear(in_features=256, out_features=2, bias=True)
+          )
+        )
+        (1): MLP(
+          (layers): ModuleList(
+            (0): Linear(in_features=256, out_features=256, bias=True)
+            (1): Linear(in_features=256, out_features=256, bias=True)
+            (2): Linear(in_features=256, out_features=2, bias=True)
+          )
+        )
+        (2): MLP(
+          (layers): ModuleList(
+            (0): Linear(in_features=256, out_features=256, bias=True)
+            (1): Linear(in_features=256, out_features=256, bias=True)
+            (2): Linear(in_features=256, out_features=2, bias=True)
+          )
+        )
+        (3): MLP(
+          (layers): ModuleList(
+            (0): Linear(in_features=256, out_features=256, bias=True)
+            (1): Linear(in_features=256, out_features=256, bias=True)
+            (2): Linear(in_features=256, out_features=2, bias=True)
+          )
+        )
+      )
+      (decoder): DeformableTransformerDecoder(
+        (layers): ModuleList(
+          (0): UpsamplingDecoderLayer(
+            (inner): DeformableTransformerControlLayer(
+              (cross_attn): MSDeformAttn(
+                (sampling_offsets): Linear(in_features=256, out_features=256, bias=True)
+                (attention_weights): Linear(in_features=256, out_features=128, bias=True)
+                (value_proj): Linear(in_features=256, out_features=256, bias=True)
+                (output_proj): Linear(in_features=256, out_features=256, bias=True)
+              )
+              (dropout1): Dropout(p=0.0, inplace=False)
+              (norm1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (self_attn): MultiheadAttention(
+                (out_proj): _LinearWithBias(in_features=256, out_features=256, bias=True)
+              )
+              (dropout2): Dropout(p=0.0, inplace=False)
+              (norm2): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (linear1): Linear(in_features=256, out_features=1024, bias=True)
+              (dropout3): Dropout(p=0.0, inplace=False)
+              (linear2): Linear(in_features=1024, out_features=256, bias=True)
+              (dropout4): Dropout(p=0.0, inplace=False)
+              (norm3): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+          (1): UpsamplingDecoderLayer(
+            (inner): DeformableTransformerControlLayer(
+              (cross_attn): MSDeformAttn(
+                (sampling_offsets): Linear(in_features=256, out_features=256, bias=True)
+                (attention_weights): Linear(in_features=256, out_features=128, bias=True)
+                (value_proj): Linear(in_features=256, out_features=256, bias=True)
+                (output_proj): Linear(in_features=256, out_features=256, bias=True)
+              )
+              (dropout1): Dropout(p=0.0, inplace=False)
+              (norm1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (self_attn): MultiheadAttention(
+                (out_proj): _LinearWithBias(in_features=256, out_features=256, bias=True)
+              )
+              (dropout2): Dropout(p=0.0, inplace=False)
+              (norm2): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (linear1): Linear(in_features=256, out_features=1024, bias=True)
+              (dropout3): Dropout(p=0.0, inplace=False)
+              (linear2): Linear(in_features=1024, out_features=256, bias=True)
+              (dropout4): Dropout(p=0.0, inplace=False)
+              (norm3): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+          (2): UpsamplingDecoderLayer(
+            (inner): DeformableTransformerControlLayer(
+              (cross_attn): MSDeformAttn(
+                (sampling_offsets): Linear(in_features=256, out_features=256, bias=True)
+                (attention_weights): Linear(in_features=256, out_features=128, bias=True)
+                (value_proj): Linear(in_features=256, out_features=256, bias=True)
+                (output_proj): Linear(in_features=256, out_features=256, bias=True)
+              )
+              (dropout1): Dropout(p=0.0, inplace=False)
+              (norm1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (self_attn): MultiheadAttention(
+                (out_proj): _LinearWithBias(in_features=256, out_features=256, bias=True)
+              )
+              (dropout2): Dropout(p=0.0, inplace=False)
+              (norm2): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (linear1): Linear(in_features=256, out_features=1024, bias=True)
+              (dropout3): Dropout(p=0.0, inplace=False)
+              (linear2): Linear(in_features=1024, out_features=256, bias=True)
+              (dropout4): Dropout(p=0.0, inplace=False)
+              (norm3): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+          (3): UpsamplingDecoderLayer(
+            (inner): DeformableTransformerControlLayer(
+              (cross_attn): MSDeformAttn(
+                (sampling_offsets): Linear(in_features=256, out_features=256, bias=True)
+                (attention_weights): Linear(in_features=256, out_features=128, bias=True)
+                (value_proj): Linear(in_features=256, out_features=256, bias=True)
+                (output_proj): Linear(in_features=256, out_features=256, bias=True)
+              )
+              (dropout1): Dropout(p=0.0, inplace=False)
+              (norm1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (self_attn): MultiheadAttention(
+                (out_proj): _LinearWithBias(in_features=256, out_features=256, bias=True)
+              )
+              (dropout2): Dropout(p=0.0, inplace=False)
+              (norm2): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+              (linear1): Linear(in_features=256, out_features=1024, bias=True)
+              (dropout3): Dropout(p=0.0, inplace=False)
+              (linear2): Linear(in_features=1024, out_features=256, bias=True)
+              (dropout4): Dropout(p=0.0, inplace=False)
+              (norm3): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+        )
+        (xy_embed): ModuleList(
+          (0): MLP(
+            (layers): ModuleList(
+              (0): Linear(in_features=256, out_features=256, bias=True)
+              (1): Linear(in_features=256, out_features=256, bias=True)
+              (2): Linear(in_features=256, out_features=2, bias=True)
+            )
+          )
+          (1): MLP(
+            (layers): ModuleList(
+              (0): Linear(in_features=256, out_features=256, bias=True)
+              (1): Linear(in_features=256, out_features=256, bias=True)
+              (2): Linear(in_features=256, out_features=2, bias=True)
+            )
+          )
+          (2): MLP(
+            (layers): ModuleList(
+              (0): Linear(in_features=256, out_features=256, bias=True)
+              (1): Linear(in_features=256, out_features=256, bias=True)
+              (2): Linear(in_features=256, out_features=2, bias=True)
+            )
+          )
+          (3): MLP(
+            (layers): ModuleList(
+              (0): Linear(in_features=256, out_features=256, bias=True)
+              (1): Linear(in_features=256, out_features=256, bias=True)
+              (2): Linear(in_features=256, out_features=2, bias=True)
+            )
+          )
+        )
+      )
+    )
+  )
+)
+[11/21 17:47:53] fvcore.common.checkpoint INFO: [Checkpointer] Loading from model/cityscapes_r50_fpn_1x_coco.pth ...
+[11/21 17:47:54] detectron2.data.datasets.coco INFO: Loaded 1000 images in COCO format from datasets/coco/annotations/instances_val2017.json
+[11/21 17:47:54] detectron2.data.build INFO: Distribution of instances among all 8 categories:
+[36m|  category  | #instances   |  category  | #instances   |  category  | #instances   |
+|:----------:|:-------------|:----------:|:-------------|:----------:|:-------------|
+| pedestrian | 1177         |   rider    | 45           |    car     | 10889        |
+|   truck    | 521          |    bus     | 219          |   train    | 7            |
+| motorcycle | 47           |  bicycle   | 100          |            |              |
+|   total    | 13005        |            |              |            |              |[0m
+[11/21 17:47:54] detectron2.data.dataset_mapper INFO: [DatasetMapper] Augmentations used in inference: [ResizeShortestEdge(short_edge_length=(1024, 1024), max_size=2048, sample_style='choice')]
+[11/21 17:47:54] detectron2.data.common INFO: Serializing 1000 elements to byte tensors and concatenating them all ...
+[11/21 17:47:54] detectron2.data.common INFO: Serialized dataset takes 3.50 MiB
+[11/21 17:47:54] detectron2.evaluation.evaluator INFO: Start inference on 500 batches
+[11/21 17:48:01] detectron2.evaluation.evaluator INFO: Inference done 11/500. Dataloading: 0.0017 s/iter. Inference: 0.1626 s/iter. Eval: 0.0657 s/iter. Total: 0.2301 s/iter. ETA=0:01:52
+[11/21 17:48:06] detectron2.evaluation.evaluator INFO: Inference done 39/500. Dataloading: 0.0022 s/iter. Inference: 0.1467 s/iter. Eval: 0.0389 s/iter. Total: 0.1878 s/iter. ETA=0:01:26
+[11/21 17:48:11] detectron2.evaluation.evaluator INFO: Inference done 67/500. Dataloading: 0.0023 s/iter. Inference: 0.1451 s/iter. Eval: 0.0383 s/iter. Total: 0.1857 s/iter. ETA=0:01:20
+[11/21 17:48:16] detectron2.evaluation.evaluator INFO: Inference done 94/500. Dataloading: 0.0022 s/iter. Inference: 0.1454 s/iter. Eval: 0.0396 s/iter. Total: 0.1873 s/iter. ETA=0:01:16
+[11/21 17:48:21] detectron2.evaluation.evaluator INFO: Inference done 121/500. Dataloading: 0.0022 s/iter. Inference: 0.1455 s/iter. Eval: 0.0402 s/iter. Total: 0.1879 s/iter. ETA=0:01:11
+[11/21 17:48:26] detectron2.evaluation.evaluator INFO: Inference done 148/500. Dataloading: 0.0022 s/iter. Inference: 0.1451 s/iter. Eval: 0.0401 s/iter. Total: 0.1874 s/iter. ETA=0:01:05
+[11/21 17:48:31] detectron2.evaluation.evaluator INFO: Inference done 175/500. Dataloading: 0.0021 s/iter. Inference: 0.1452 s/iter. Eval: 0.0404 s/iter. Total: 0.1878 s/iter. ETA=0:01:01
+[11/21 17:48:36] detectron2.evaluation.evaluator INFO: Inference done 202/500. Dataloading: 0.0021 s/iter. Inference: 0.1451 s/iter. Eval: 0.0403 s/iter. Total: 0.1876 s/iter. ETA=0:00:55
+[11/21 17:48:41] detectron2.evaluation.evaluator INFO: Inference done 231/500. Dataloading: 0.0021 s/iter. Inference: 0.1442 s/iter. Eval: 0.0394 s/iter. Total: 0.1858 s/iter. ETA=0:00:49
+[11/21 17:48:46] detectron2.evaluation.evaluator INFO: Inference done 257/500. Dataloading: 0.0021 s/iter. Inference: 0.1445 s/iter. Eval: 0.0401 s/iter. Total: 0.1868 s/iter. ETA=0:00:45
+[11/21 17:48:51] detectron2.evaluation.evaluator INFO: Inference done 285/500. Dataloading: 0.0021 s/iter. Inference: 0.1444 s/iter. Eval: 0.0399 s/iter. Total: 0.1865 s/iter. ETA=0:00:40
+[11/21 17:48:56] detectron2.evaluation.evaluator INFO: Inference done 314/500. Dataloading: 0.0021 s/iter. Inference: 0.1437 s/iter. Eval: 0.0393 s/iter. Total: 0.1852 s/iter. ETA=0:00:34
+[11/21 17:49:02] detectron2.evaluation.evaluator INFO: Inference done 341/500. Dataloading: 0.0021 s/iter. Inference: 0.1439 s/iter. Eval: 0.0395 s/iter. Total: 0.1856 s/iter. ETA=0:00:29
+[11/21 17:49:07] detectron2.evaluation.evaluator INFO: Inference done 369/500. Dataloading: 0.0021 s/iter. Inference: 0.1438 s/iter. Eval: 0.0392 s/iter. Total: 0.1852 s/iter. ETA=0:00:24
+[11/21 17:49:12] detectron2.evaluation.evaluator INFO: Inference done 397/500. Dataloading: 0.0021 s/iter. Inference: 0.1437 s/iter. Eval: 0.0391 s/iter. Total: 0.1850 s/iter. ETA=0:00:19
+[11/21 17:49:17] detectron2.evaluation.evaluator INFO: Inference done 423/500. Dataloading: 0.0021 s/iter. Inference: 0.1440 s/iter. Eval: 0.0394 s/iter. Total: 0.1856 s/iter. ETA=0:00:14
+[11/21 17:49:22] detectron2.evaluation.evaluator INFO: Inference done 452/500. Dataloading: 0.0021 s/iter. Inference: 0.1437 s/iter. Eval: 0.0392 s/iter. Total: 0.1851 s/iter. ETA=0:00:08
+[11/21 17:49:27] detectron2.evaluation.evaluator INFO: Inference done 479/500. Dataloading: 0.0021 s/iter. Inference: 0.1437 s/iter. Eval: 0.0392 s/iter. Total: 0.1851 s/iter. ETA=0:00:03
+[11/21 17:49:31] detectron2.evaluation.evaluator INFO: Total inference time: 0:01:32.064300 (0.185988 s / iter per device, on 2 devices)
+[11/21 17:49:31] detectron2.evaluation.evaluator INFO: Total inference pure compute time: 0:01:11 (0.143850 s / iter per device, on 2 devices)

@@ -8,7 +8,7 @@ export DETECTRON2_OUTPUTS=outputs/train/bdd100k
 ID=159
 
 CUDA_VISIBLE_DEVICES=5,6 python projects/BoundaryFormer/train_net.py --num-gpus 2\
-  --config-file projects/BoundaryFormer/configs/COCO-InstanceSegmentation/boundaryformer_rcnn_R_50_FPN_1x.yaml \
+  --config-file projects/BoundaryFormer/configs/BDD100K/boundaryformer.yaml \
   --eval-only MODEL.WEIGHTS model/cityscapes_r50_fpn_1x_coco.pth
 
 # mkdir -p datasets/coco

@@ -7,7 +7,7 @@ export DETECTRON2_OUTPUTS=outputs/
 
 ID=159
 
-CUDA_VISIBLE_DEVICES=0,1 python projects/BoundaryFormer/train_net.py --num-gpus 2\
+CUDA_VISIBLE_DEVICES=5,6 python projects/BoundaryFormer/train_net.py --num-gpus 2\
   --config-file projects/BoundaryFormer/configs/Cityscapes/boundaryformer_rcnn_R_50_FPN_1x.yaml \
   --eval-only MODEL.WEIGHTS model/cityscapes_r50_fpn_1x_coco.pth
 
